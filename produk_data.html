@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CRUD Web Service</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.11.2/datatables.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
+    <style>
+        #updateDialog {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>CRUD Web Service</h1>
+
+    <h2>Buyer Data Management</h2>
+    <table id="konsumenTable" class="display" style="width:100%">
+        <thead>
+            <tr>
+                <th>ID Konsumen</th>
+                <th>Nama Konsumen</th>
+                <th>NO HP</th>
+                <th>Email</th>
+                <th>Jenis Kelamin</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <h2>Add Konsumen</h2>
+    <form id="addForm">
+        <div>
+            <label for="id_konsumen">ID Konsumen:</label>
+            <input type="text" id="id_konsumen" name="id_konsumen">
+        </div>
+        <div>
+            <label for="nm_konsumen">Nama Konsumen:</label>
+            <input type="text" id="nm_konsumen" name="nm_konsumen">
+        </div>
+        <div>
+            <label for="nohp_konsumen">NO HP:</label>
+            <input type="text" id="nohp_konsumen" name="nohp_konsumen">
+        </div>
+        <div>
+            <label for="email_konsumen">Email:</label>
+            <input type="text" id="email_konsumen" name="email_konsumen">
+        </div>
+        <div>
+            <label for="gender_konsumen">Jenis Kelamin:</label>
+            <input type="text" id="gender_konsumen" name="gender_konsumen">
+        </div>
+        <div>
+            <button type="submit">Add</button>
+        </div>
+    </form>
+
+    <div id="updateDialog" title="Update Konsumen">
+        <form id="updateForm">
+            <input type="hidden" id="update_id_konsumen" name="update_id_konsumen">
+            <div>
+                <label for="update_nm_konsumen">Nama Konsumen:</label>
+                <input type="text" id="update_nm_konsumen" name="update_nm_konsumen">
+            </div>
+            <div>
+                <label for="update_nohp_konsumen">NO HP:</label>
+                <input type="text" id="update_nohp_konsumen" name="update_nohp_konsumen">
+            </div>
+            <div>
+                <label for="update_email_konsumen">Email:</label>
+                <input type="text" id="update_email_konsumen" name="update_email_konsumen">
+            </div>
+            <div>
+                <label for="update_gender_konsumen">Jenis Kelamin:</label>
+                <input type="text" id="update_gender_konsumen" name="update_gender_konsumen">
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-1.11.2/datatables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
+    <script>
+
+        $(document).ready(function() {
+            // Initialisasi DataTable ======================================================================================
+            var konsumenTable = $('#konsumenTable').DataTable({
+                ajax: {
+                    url: 'http://localhost/tubes3/konsumen.php',
+                    dataSrc: ''
+                },
+                columns: [
+                    { data: 'id_konsumen' },
+                    { data: 'nm_konsumen' },
+                    { data: 'nohp_konsumen' },
+                    { data: 'email_konsumen' },
+                    { data: 'gender_konsumen' },
+                    {
+                        data: null,
+                        render: function (data, type, row) {
+                            return '<button class="deleteButton" data-id="' + row.id_konsumen + '">Delete</button>' +
+                                   '<button class="updateButton" data-id="' + row.id_konsumen + '">Update</button>';
+                        }
+                    }
+                ]
+            });
+
+            // Add/POST Form ===============================================================================================
+            $('#addForm').validate({
+                rules: {
+                    id_konsumen: 'required',
+                    nm_konsumen: 'required',
+                    nohp_konsumen: 'required',
+                    email_konsumen: 'required',
+                    gender_konsumen: 'required'
+
+                },
+                submitHandler: function(form) {
+                    var formData = $(form).serialize();
+                    $.ajax({
+                        url: 'http://localhost/tubes3/konsumen.php',
+                        type: 'POST',
+                        data: formData,
+                        success: function(response) {
+                            konsumenTable.ajax.reload();
+                            form.reset();
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(xhr.responseText);
+                        }
+                    });
+                }
+            });
+
+            // DELETE + Confirmation =======================================================================================
+            $('#konsumenTable').on('click', '.deleteButton', function() {
+                var id_konsumen = $(this).data('id');
+                var row = $(this).closest('tr');
+                if (confirm('Are you sure you want to delete this buyer?')) {
+                    $.ajax({
+                        url: 'http://localhost/tubes3/konsumen.php?id=' + id_konsumen,
+                        type: 'DELETE',
+                        success: function(response) {
+                            konsumenTable.row(row).remove().draw(false);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(xhr.responseText);
+                        }
+                    });
+                }
+            });
+
+            // UPDATE + Dialog ============================================================================================
+            $('#konsumenTable').on('click', '.updateButton', function() {
+                var id_konsumen = $(this).data('id');
+                $.ajax({
+                    url: 'http://localhost/tubes3/konsumen.php?id=' + id_konsumen,
+                    type: 'GET',
+                    success: function(response) {
+                        var konsumen = response;
+                        $('#update_id_konsumen').val(konsumen.id_konsumen);
+                        $('#update_nm_konsumen').val(konsumen.nm_konsumen);
+                        $('#update_nohp_konsumen').val(konsumen.nohp_konsumen);
+                        $('#update_email_konsumen').val(konsumen.email_konsumen);
+                        $('#update_gender_konsumen').val(konsumen.gender_konsumen);
+
+                        $('#updateDialog').dialog({
+                            autoOpen: true,
+                            width: 400,
+                            buttons: {
+                                "Update": function() {
+                                    var updateData = $('#updateForm').serialize();
+                                    $.ajax({
+                                        url: 'http://localhost/tubes3/konsumen.php',
+                                        type: 'PUT',
+                                        data: updateData,
+                                        success: function(response) {
+                                            konsumenTable.ajax.reload();
+                                            $('#updateDialog').dialog('close');
+                                        },
+                                        error: function(xhr, status, error) {
+                                            console.error(xhr.responseText);
+                                        }
+                                    });
+                                },
+                                "Cancel": function() {
+                                    $(this).dialog('close');
+                                }
+                            }
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.error(xhr.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
